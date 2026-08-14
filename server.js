@@ -10,16 +10,39 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Serve static frontend
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Simple in-memory cache with TTL
+// Keyed by request URL + options JSON
+const cache = new Map();
+const DEFAULT_TTL_MS = 1000 * 60 * 5; // 5 minutes
+
+function setCache(key, value, ttl = DEFAULT_TTL_MS) {
+  const expires = Date.now() + ttl;
+  cache.set(key, { value, expires });
+}
+
+function getCache(key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expires) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+// Periodic cleanup to prevent memory growth
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of cache.entries()) {
+    if (v.expires <= now) cache.delete(k);
+  }
+}, 1000 * 60); // every 60s
 
 // Helper: normalize provider response to link objects
 function extractLinksFromProvider(data) {
-  // Try several common shapes returned by downloader providers
   const links = [];
-
-  // common keys
   if (!data) return links;
 
   if (data.mediaLinks) {
@@ -35,7 +58,6 @@ function extractLinksFromProvider(data) {
   if (data.audioUrl) links.push({ label: 'Audio (MP3)', url: data.audioUrl });
   if (data.audio) links.push({ label: 'Audio (MP3)', url: data.audio });
 
-  // some providers return an array 'links' or 'result'
   if (Array.isArray(data.links)) {
     data.links.forEach(l => {
       if (typeof l === 'string') links.push({ label: 'Download', url: l });
@@ -45,12 +67,12 @@ function extractLinksFromProvider(data) {
 
   if (Array.isArray(data.result)) {
     data.result.forEach(l => {
-      if (l.url) links.push({ label: l.quality || l.label || 'Download', url: l.url });
+      if (l && l.url) links.push({ label: l.quality || l.label || 'Download', url: l.url });
     });
   }
 
   // fallback: scan object for urls
-  const urlRegex = /https?:\\/\\/[^\s'"<>{}]+/g;
+  const urlRegex = /https?:\/\/[^\s'"<>{}]+/g;
   const jsonString = JSON.stringify(data);
   const found = jsonString.match(urlRegex) || [];
   found.forEach(u => links.push({ label: 'Link', url: u }));
@@ -68,13 +90,14 @@ function extractLinksFromProvider(data) {
   return uniq;
 }
 
-// API: POST /api/download
-// Body: { url: string, type: 'video'|'audio', noWatermark: boolean, hd: boolean }
 app.post('/api/download', async (req, res) => {
   const { url, type = 'video', noWatermark = true, hd = true } = req.body;
   if (!url) return res.status(400).json({ error: 'Missing `url` in request body.' });
 
-  // The RapidAPI host and endpoint
+  const cacheKey = JSON.stringify({ url, type, noWatermark, hd });
+  const cached = getCache(cacheKey);
+  if (cached) return res.json({ links: cached.links, meta: cached.meta, cached: true });
+
   const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
   const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST || 'allmedia-downloader.p.rapidapi.com';
   const RAPIDAPI_PATH = process.env.RAPIDAPI_PATH || '/universal';
@@ -84,38 +107,31 @@ app.post('/api/download', async (req, res) => {
   }
 
   try {
-    // Many RapidAPI providers support a GET universal endpoint with ?url=...
     const apiUrl = `https://${RAPIDAPI_HOST}${RAPIDAPI_PATH}`;
-
-    const params = {
-      url,
-      // send preferences, provider may ignore unsupported params
-      type: type,
-      noWatermark: noWatermark ? 'true' : 'false',
-      hd: hd ? 'true' : 'false'
-    };
+    const params = { url, type, noWatermark: noWatermark ? 'true' : 'false', hd: hd ? 'true' : 'false' };
 
     const response = await axios.get(apiUrl, {
       params,
       headers: {
         'X-RapidAPI-Key': RAPIDAPI_KEY,
         'X-RapidAPI-Host': RAPIDAPI_HOST,
-        'Accept': 'application/json'
+        Accept: 'application/json'
       },
       timeout: 30000
     });
 
     const data = response.data;
-
-    // Normalize to a list of links for the frontend
     const links = extractLinksFromProvider(data);
 
-    // If no links found, return provider raw response for debugging
     if (!links.length) {
+      // cache raw response for short time so we don't hammer provider on repeated requests
+      setCache(cacheKey, { links: [], meta: data }, 1000 * 20); // 20s
       return res.json({ raw: data });
     }
 
-    return res.json({ links, meta: data.meta || data.metadata || null });
+    const meta = data.meta || data.metadata || null;
+    setCache(cacheKey, { links, meta });
+    return res.json({ links, meta });
   } catch (err) {
     console.error('Download API error', err?.response?.data || err.message);
     const status = err?.response?.status || 502;
@@ -124,7 +140,6 @@ app.post('/api/download', async (req, res) => {
   }
 });
 
-// Fallback - serve index
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });

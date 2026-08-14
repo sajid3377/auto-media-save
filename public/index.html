@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ur">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>All-in-One Social Media Video Downloader</title>
+  <link rel="stylesheet" href="styles.css">
+  <meta name="description" content="TikTok, Instagram Reels, YouTube Shorts, Twitter (X) اور مزید کے لیے No-watermark video downloader" />
+
+  <!-- Google AdSense (replace ca-pub-XXXX with your own AdSense client ID) -->
+  <!-- NOTE: Add your actual AdSense client ID before deploying. Keep the 'adsbygoogle.js' script. -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" crossorigin="anonymous"></script>
+  <script>
+    // Optional: set up any AdSense configuration here
+    window.adsbygoogle = window.adsbygoogle || [];
+  </script>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>All-in-One Video Downloader</h1>
+      <p class="tag">TikTok, YouTube Shorts, Instagram, Facebook, Twitter(X), Pinterest, Snapchat وغیرہ</p>
+    </header>
+
+    <section class="ad ad-top">
+      <!-- Ad space - Google AdSense code: replace data-ad-client and data-ad-slot -->
+      <ins class="adsbygoogle ad-box"
+           style="display:block"
+           data-ad-client="ca-pub-REPLACE_WITH_YOURS"
+           data-ad-slot="REPLACE_SLOT_ID"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </section>
+
+    <section class="download-card">
+      <div class="url-box">
+        <textarea id="mediaUrl" placeholder="اپنا ویڈیو/رِل/شارٹس کا لنک یہاں پیسٹ کریں" rows="3"></textarea>
+      </div>
+
+      <div class="options">
+        <label>
+          <input type="radio" name="type" value="video" checked> ویڈیو (No Watermark)
+        </label>
+        <label>
+          <input type="radio" name="type" value="audio"> آڈیو (MP3)
+        </label>
+        <label class="chk">
+          <input type="checkbox" id="hd" checked> HD
+        </label>
+      </div>
+
+      <div class="actions">
+        <button id="downloadBtn" class="btn">Download</button>
+      </div>
+
+      <div id="result" class="result"></div>
+    </section>
+
+    <section class="ad ad-bottom">
+      <!-- Bottom Ad space - replace data-ad-client and data-ad-slot -->
+      <ins class="adsbygoogle ad-box"
+           style="display:block"
+           data-ad-client="ca-pub-REPLACE_WITH_YOURS"
+           data-ad-slot="REPLACE_SLOT_ID_2"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </section>
+
+    <footer>
+      <p>Built with ❤️ — Configure RapidAPI credentials in the server. Ads space available for AdSense.</p>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
