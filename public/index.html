@@ -13,9 +13,10 @@
     h1 { font-size: 32px; font-weight: bold; color: #222; margin-bottom: 25px; }
 
     .download-container {
-      max-width: 650px;
+      max-width: 750px;
       margin: 0 auto;
       display: flex;
+      align-items: center;
       border: 3px solid #8ec63f;
       border-radius: 6px;
       overflow: hidden;
@@ -30,12 +31,18 @@
       outline: none;
     }
 
+    .quality-select {
+      padding: 10px 12px;
+      border-left: 1px solid #eee;
+      font-size: 14px;
+    }
+
     .btn-submit {
       background-color: #8ec63f;
       color: #fff;
       border: none;
-      padding: 0 25px;
-      font-size: 24px;
+      padding: 12px 18px;
+      font-size: 20px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -44,20 +51,14 @@
 
     .btn-submit:hover { background-color: #7ab332; }
 
-    .terms-text {
-      margin-top: 15px;
-      font-size: 13px;
-      color: #666;
-    }
-
-    .terms-text a { color: #8ec63f; text-decoration: underline; }
+    .info-text { margin-top: 15px; font-size: 13px; color: #666; }
 
     #result { margin-top: 30px; }
     .media-card {
       background: #fff;
       padding: 20px;
       border-radius: 8px;
-      max-width: 500px;
+      max-width: 700px;
       margin: 0 auto;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
@@ -72,6 +73,8 @@
       font-weight: bold;
       border-radius: 5px;
     }
+
+    .loader { padding: 18px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -86,39 +89,66 @@
   <form id="downloadForm">
     <div class="download-container">
       <input type="url" id="mediaUrl" class="input-box" placeholder="پیسٹ کریں میڈیا کا لنک یہاں..." required>
+      <select id="quality" class="quality-select" aria-label="Quality">
+        <option value="auto">Auto</option>
+        <option value="480">480p</option>
+        <option value="720">720p (HD)</option>
+        <option value="1080">1080p (Full HD)</option>
+        <option value="original">Original</option>
+      </select>
       <button type="submit" class="btn-submit">➔</button>
     </div>
   </form>
 
-  <p class="terms-text">
-    By using our service you accept our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
-  </p>
+  <p class="info-text">آپ کی کنفیگریشن سرور سائیڈ (Vercel Environment Variables) میں رکھی جاتی ہے — خفیہ کلیدیں عوامی جگہ پر نہ ڈالیں۔</p>
 
   <div id="result"></div>
 
   <script>
+    const resultDiv = document.getElementById('result');
+    const setLoading = (msg = 'تلاش کیا جا رہا ہے، براہ کرم انتظار کریں...') => {
+      resultDiv.innerHTML = `<div class="media-card loader">${msg}</div>`;
+    };
+
+    const showError = (msg) => {
+      resultDiv.innerHTML = `<div class="media-card" style="color:#d9534f;">${msg}</div>`;
+    };
+
+    const showMedia = (data) => {
+      const mediaUrl = data && (data.url || data.result || data.media || (data.data && data.data.url) || (data.raw && (data.raw.url || data.raw.result)));
+      if (!mediaUrl) return showError('میڈیا لنک موصول نہیں ہوا — براہ کرم دوبارہ کوشش کریں۔');
+
+      const isVideo = /\.(mp4|webm|mkv|mov)(\?|$)/i.test(mediaUrl);
+      resultDiv.innerHTML = `
+        <div class="media-card">
+          <h3>میڈیا تیار ہے!</h3>
+          ${isVideo ? `<video controls src="${mediaUrl}"></video>` : `<img src="${mediaUrl}" alt="media"/>`}
+          <a href="${mediaUrl}" target="_blank" class="dl-btn" download>ڈاؤن لوڈ کریں</a>
+        </div>
+      `;
+    };
+
     document.getElementById('downloadForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const url = document.getElementById('mediaUrl').value;
-      const resultDiv = document.getElementById('result');
-      resultDiv.innerHTML = '<p>تلاش کیا جا رہا ہے، براہ کرم انتظار کریں...</p>';
+      const url = document.getElementById('mediaUrl').value.trim();
+      const quality = document.getElementById('quality').value;
+
+      if (!url) return showError('براہ کرم ایک صحیح URL درج کریں۔');
+
+      setLoading();
 
       try {
-        const response = await fetch(`/api/download?url=${encodeURIComponent(url)}`);
-        const data = await response.json();
-
-        if (data && data.url) {
-          resultDiv.innerHTML = `
-            <div class="media-card">
-              <h3>میڈیا تیار ہے!</h3>
-              <a href="${data.url}" target="_blank" class="dl-btn" download>ڈاؤن لوڈ کریں</a>
-            </div>
-          `;
-        } else {
-          resultDiv.innerHTML = '<p style="color:red;">لنک پروسیس کرنے میں ناکامی ہوئی۔ دوبارہ کوشش کریں۔</p>';
+        const response = await fetch(`/api/download?url=${encodeURIComponent(url)}&quality=${encodeURIComponent(quality)}`);
+        if (!response.ok) {
+          const err = await response.json().catch(() => null);
+          return showError(err && err.error ? err.error : 'سرور سے غلطی موصول ہوئی۔');
         }
+
+        const data = await response.json();
+        showMedia(data);
       } catch (err) {
-        resultDiv.innerHTML = '<p style="color:red;">سرور سے رابطہ نہیں ہو سکا۔</p>';
+        showError('سرور سے رابطہ ناکام — براہ کرم دوبارہ کوشش کریں۔');
+        console.error('Fetch error:', err);
       }
     });
   </script>
