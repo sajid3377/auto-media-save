@@ -143,8 +143,9 @@ app.post('/api/download', async (req, res) => {
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+}
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
 module.exports = app;
+
