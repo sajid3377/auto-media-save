@@ -1,78 +1,127 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ur">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>All-in-One Social Media Video Downloader</title>
-  <link rel="stylesheet" href="styles.css">
-  <meta name="description" content="TikTok, Instagram Reels, YouTube Shorts, Twitter (X) اور مزید کے لیے No-watermark video downloader" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Media Downloader</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background-color: #f8f9fa; color: #333; text-align: center; padding: 20px; }
+    
+    .header { margin-top: 30px; margin-bottom: 20px; }
+    .logo-icon { width: 90px; height: 90px; margin-bottom: 10px; }
+    h1 { font-size: 32px; font-weight: bold; color: #222; margin-bottom: 25px; }
 
-  <!-- Google AdSense (replace ca-pub-XXXX with your own AdSense client ID) -->
-  <!-- NOTE: Add your actual AdSense client ID before deploying. Keep the 'adsbygoogle.js' script. -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js" crossorigin="anonymous"></script>
-  <script>
-    // Optional: set up any AdSense configuration here
-    window.adsbygoogle = window.adsbygoogle || [];
-  </script>
+    .download-container {
+      max-width: 650px;
+      margin: 0 auto;
+      display: flex;
+      border: 3px solid #8ec63f;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .input-box {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .btn-submit {
+      background-color: #8ec63f;
+      color: #fff;
+      border: none;
+      padding: 0 25px;
+      font-size: 24px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-submit:hover { background-color: #7ab332; }
+
+    .terms-text {
+      margin-top: 15px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .terms-text a { color: #8ec63f; text-decoration: underline; }
+
+    #result { margin-top: 30px; }
+    .media-card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 500px;
+      margin: 0 auto;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .media-card video, .media-card img { max-width: 100%; border-radius: 6px; }
+    .dl-btn {
+      display: inline-block;
+      margin-top: 15px;
+      background: #8ec63f;
+      color: white;
+      padding: 12px 25px;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
-  <main class="container">
-    <header>
-      <h1>All-in-One Video Downloader</h1>
-      <p class="tag">TikTok, YouTube Shorts, Instagram, Facebook, Twitter(X), Pinterest, Snapchat وغیرہ</p>
-    </header>
 
-    <section class="ad ad-top">
-      <!-- Ad space - Google AdSense code: replace data-ad-client and data-ad-slot -->
-      <ins class="adsbygoogle ad-box"
-           style="display:block"
-           data-ad-client="ca-pub-REPLACE_WITH_YOURS"
-           data-ad-slot="REPLACE_SLOT_ID"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </section>
+  <div class="header">
+    <svg class="logo-icon" viewBox="0 0 24 24" fill="#8ec63f">
+      <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+    </svg>
+    <h1>Auto Media Save</h1>
+  </div>
 
-    <section class="download-card">
-      <div class="url-box">
-        <textarea id="mediaUrl" placeholder="اپنا ویڈیو/رِل/شارٹس کا لنک یہاں پیسٹ کریں" rows="3"></textarea>
-      </div>
+  <form id="downloadForm">
+    <div class="download-container">
+      <input type="url" id="mediaUrl" class="input-box" placeholder="پیسٹ کریں میڈیا کا لنک یہاں..." required>
+      <button type="submit" class="btn-submit">➔</button>
+    </div>
+  </form>
 
-      <div class="options">
-        <label>
-          <input type="radio" name="type" value="video" checked> ویڈیو (No Watermark)
-        </label>
-        <label>
-          <input type="radio" name="type" value="audio"> آڈیو (MP3)
-        </label>
-        <label class="chk">
-          <input type="checkbox" id="hd" checked> HD
-        </label>
-      </div>
+  <p class="terms-text">
+    By using our service you accept our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+  </p>
 
-      <div class="actions">
-        <button id="downloadBtn" class="btn">Download</button>
-      </div>
+  <div id="result"></div>
 
-      <div id="result" class="result"></div>
-    </section>
+  <script>
+    document.getElementById('downloadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = document.getElementById('mediaUrl').value;
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '<p>تلاش کیا جا رہا ہے، براہ کرم انتظار کریں...</p>';
 
-    <section class="ad ad-bottom">
-      <!-- Bottom Ad space - replace data-ad-client and data-ad-slot -->
-      <ins class="adsbygoogle ad-box"
-           style="display:block"
-           data-ad-client="ca-pub-REPLACE_WITH_YOURS"
-           data-ad-slot="REPLACE_SLOT_ID_2"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </section>
+      try {
+        const response = await fetch(`/api/download?url=${encodeURIComponent(url)}`);
+        const data = await response.json();
 
-    <footer>
-      <p>Built with ❤️ — Configure RapidAPI credentials in the server. Ads space available for AdSense.</p>
-    </footer>
-  </main>
+        if (data && data.url) {
+          resultDiv.innerHTML = `
+            <div class="media-card">
+              <h3>میڈیا تیار ہے!</h3>
+              <a href="${data.url}" target="_blank" class="dl-btn" download>ڈاؤن لوڈ کریں</a>
+            </div>
+          `;
+        } else {
+          resultDiv.innerHTML = '<p style="color:red;">لنک پروسیس کرنے میں ناکامی ہوئی۔ دوبارہ کوشش کریں۔</p>';
+        }
+      } catch (err) {
+        resultDiv.innerHTML = '<p style="color:red;">سرور سے رابطہ نہیں ہو سکا۔</p>';
+      }
+    });
+  </script>
 
-  <script src="app.js"></script>
 </body>
 </html>
